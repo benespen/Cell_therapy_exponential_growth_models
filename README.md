@@ -1,0 +1,2 @@
+# Cell_therapy_exponential_growth_models
+Exploring exponential growth models for cellular expansion processes
