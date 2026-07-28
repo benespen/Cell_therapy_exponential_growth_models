@@ -39,11 +39,19 @@ df_exponential_growth
 ```
 
 ```{r exponential-growth-plot}
+# Plot data points with ggplot
 df_exponential_growth |> 
   ggplot(aes(x = elapsed_time, y = cell_number)) +
   geom_point(size = 3) +
     labs(x = "Elapsed Time (hours)", y = "Cell Count")
 ```
+
+We can interpolate intermediate cell counts between the two measurements using our exponential growth model.
+
+```{r interpolate-exp-growth}
+
+```
+
 
 However, it is not very hard to find 
 Plot of exponential growth
