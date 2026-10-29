@@ -336,3 +336,5 @@ Troubleshooting_exp_growth |>
 The plot shows the linear regression along with 50%, 80%, 95%, and 99% posterior credibility or compatibility intervals. The data points have been color coded as either everything went well in expansion, or there was some kind of problem. I have obscured any details about this, but this is from real data, and it shows an intriguing pattern. All of the expansion runs where there was some kind of problem cluster below the regression line.
 
 Slower than expected growth is associated with a problem, but it also clear that not everything that is slower than expected has a problem. Real root-cause analysis of this would require details that cannot be shared, but this modeling technique can provide valuable information as an input to a root-cause investigation.
+
+Each modeling technique presented here builds upon the one before it, but each one is also valuable in its own right. Based upon the amount of data available and the question to be answered, I have used each one of these models in my own work.
