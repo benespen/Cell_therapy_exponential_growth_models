@@ -4,13 +4,17 @@ Benjamin I. Espen 2026-07-28
 
 # Cell expansion processes in cell and gene therapy
 
-This is an exploration of how I gain insight from data. The data I will be using is derived from real data, but has been anonymized and manipulated to isolate it from its source. I like using real(ish) data for this because real data has more surprises in it than simulated data does. Part of using data is deciding how to deal with all the complications and messiness that come with data collection. Real data is not perfect. It also does not need to be perfect before we can make use of it.
+Many people have now heard George E. P. Box’s saying that all models are wrong. What is perhaps less common is an exploration of how you gain value from a model you know to be wrong. Here I will walk through a process of systematically evaluating models from simpler to more complex using an example drawn from my experience. I will also show how I used a model that does not incorporate every important feature of the data to make real decisions.
+
+The data I will be using is derived from real data, but has been anonymized and manipulated to isolate it from its source. I like using real(ish) data for this because real data has more surprises in it than simulated data does. Part of using data is deciding how to deal with all the complications and messiness that come with data collection. Real data is not perfect. It also does not need to be perfect before we can make use of it.
 
 For this I will be using cell count data from cellular expansion processes. Cell expansion processes are common to most cell and gene therapy products, as you almost always start with fewer cells than you would like to use. The biological heart of a cellular expansion process is cellular division: one cell divides into two cells.
 
 ## Exponential growth model
 
-This then suggests a model we might use: exponential growth. This model multiplies a doublings per unit time parameter represented by $T_D$ by an elapsed time to calculate the number of doublings. A standard exponential growth model uses a base of *e*, but for cell growth the natural base is *2*. The result from raising *2* to the number of doublings is then multiplied by your starting cell count $q_1$ to produce a final cell count $q_2$.
+This then suggests a model we might use: exponential growth. I like to build my statistical models on the physical, chemical, or biological processes that I am trying to understand, because this allows me to incorporate all of the science or engineering that led up to our understanding of that process.
+
+This model multiplies a doublings per unit time parameter represented by $T_D$ by an elapsed time to calculate the number of doublings. A standard exponential growth model uses a base of *e*, but for cell growth the natural base is *2*. The result from raising *2* to the number of doublings is then multiplied by your starting cell count $q_1$ to produce a final cell count $q_2$.
 
 $q_2 = q_1 * 2^{T_D * (t_2 - t_1)}$
 
@@ -19,13 +23,13 @@ $q_2 = q_1 * 2^{T_D * (t_2 - t_1)}$
 If we have a couple of cell counts with associated times, we can calculate $T_D$. Let’s look at an example that has been taken from a real data set, suitably anonymized.
 
 ``` r
-# Make a data frame containing two cell counts at two elapsed times
+# Make a tibble containing two cell counts at two elapsed times
 df_exponential_growth <- as_tibble(data.frame(
   cell_number = c(15000 , 98000),
   elapsed_time = c(12 , 192)
 ))
 
-# Show the data frame
+# Show the tibble
 df_exponential_growth
 ```
 
@@ -219,7 +223,7 @@ That is much closer, although you can still see that the cell counts are systema
 
 ## Logistic growth model
 
-This kind of growth process that slows and then stops can be modeled as logistic growth. There are a lot of ways to parametrize logistic functions, here I’m going to follow along with what I used for exponential growth. *L* is the lower asymptote, or our starting cell count, *U* is the upper asymptote, $T_D$ is again our rate parameter, and *M* is the inflection point of the logistic curve in hours.
+This kind of growth process that slows and then stops can be modeled as logistic growth. There are a lot of ways to parametrize logistic functions, here I’m going to follow along with what I used for exponential growth. $L$ is the lower asymptote, or our starting cell count, $U$ is the upper asymptote, $T_D$ is again our rate parameter, and $M$ is the inflection point of the logistic curve in hours.
 
 $q_2 = U + \frac{L-U}{1+2^{T_D*(t-M)}}$
 
@@ -252,7 +256,7 @@ Logistic_cell_growth
 
 ``` r
 # Plot the data 
-Logistic_cell_growth %>% 
+Logistic_cell_growth |> 
   ggplot(aes(x = Time, y = Cell_count)) +
   geom_point(size = 3) +
   labs(
@@ -343,6 +347,7 @@ $\frac{log_2(238981/5171)}{285-0} = 0.019$
 $\frac{log_2(246279/5171)}{360-0} = 0.015$
 
 ``` r
+knitr::opts_chunk$set(warnings=FALSE, messages=FALSE)
 # Create new columns for each model
 logistic_fit_df <- logistic_fit_df |>
   mutate(
@@ -472,21 +477,21 @@ Cell_lin_model$fit
 ## post-warmup draws per chain=1000, total post-warmup draws=4000.
 ## 
 ##                          mean se_mean   sd    2.5%     25%     50%     75%
-## b_Intercept            -20.54    0.16 9.80  -39.95  -27.22  -20.25  -13.93
-## b_Log2_starting_cells    2.11    0.01 0.49    1.18    1.78    2.10    2.44
-## sigma                    2.55    0.00 0.25    2.12    2.36    2.53    2.71
-## Intercept               21.72    0.01 0.35   21.06   21.49   21.72   21.95
-## lprior                  -7.70    0.00 0.23   -8.21   -7.84   -7.69   -7.54
-## lp__                  -131.66    0.03 1.26 -134.97 -132.22 -131.32 -130.76
+## b_Intercept            -20.36    0.15 9.82  -39.46  -27.01  -20.42  -13.53
+## b_Log2_starting_cells    2.10    0.01 0.49    1.16    1.76    2.11    2.43
+## sigma                    2.55    0.00 0.26    2.11    2.37    2.53    2.71
+## Intercept               21.72    0.01 0.35   21.02   21.49   21.72   21.95
+## lprior                  -7.70    0.00 0.23   -8.22   -7.85   -7.68   -7.54
+## lp__                  -131.70    0.03 1.28 -134.92 -132.29 -131.37 -130.75
 ##                         97.5% n_eff Rhat
-## b_Intercept             -1.99  3950    1
-## b_Log2_starting_cells    3.07  3957    1
-## sigma                    3.10  3985    1
-## Intercept               22.44  3433    1
-## lprior                  -7.31  3596    1
-## lp__                  -130.26  1892    1
+## b_Intercept             -1.50  4429    1
+## b_Log2_starting_cells    3.04  4426    1
+## sigma                    3.12  3806    1
+## Intercept               22.42  4022    1
+## lprior                  -7.30  4030    1
+## lp__                  -130.24  1992    1
 ## 
-## Samples were drawn using NUTS(diag_e) at Thu Oct 29 08:58:12 2026.
+## Samples were drawn using NUTS(diag_e) at Tue Nov 17 10:53:26 2026.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).
@@ -515,4 +520,6 @@ The plot shows the linear regression along with 50%, 80%, 95%, and 99% posterior
 
 Slower than expected growth is associated with a problem, but it also clear that not everything that is slower than expected has a problem. Real root-cause analysis of this would require details that cannot be shared, but this modeling technique can provide valuable information as an input to a root-cause investigation.
 
-Each modeling technique presented here builds upon the one before it, but each one is also valuable in its own right. Based upon the amount of data available and the question to be answered, I have used each one of these models in my own workEach modeling technique presented here builds upon the one before it, but each one is also valuable in its own right. Based upon the amount of data available and the question to be answered, I have used each one of these models in my own work.
+## Conclusion
+
+Thus, we can see that a model we know to be wrong, an exponential growth model that only matches the data over a limited time frame, can still be an appropriate model to use for diagnosing important process changes. In this case, slower than expected or modeled growth was a useful criterion to help understand a cellular expansion process. There is a lot more that can be said here, but it is worth emphasizing that a simple mechanistic model and a linear regression produced actionable results.

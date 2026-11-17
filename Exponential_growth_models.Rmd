@@ -1,7 +1,7 @@
 ---
 title: "Exponential Growth Models for Cell Therapy"
 author: "Benjamin I. Espen"
-date: "2026-07-28"
+date: "2026-11-17"
 output: github_document
 ---
 
@@ -25,28 +25,54 @@ library(RColorBrewer)
 
 # Cell expansion processes in cell and gene therapy
 
-This is an exploration of how I gain insight from data. The data I will be using is derived from real data, but has been anonymized and manipulated to isolate it from its source. I like using real(ish) data for this because real data has more surprises in it than simulated data does. Part of using data is deciding how to deal with all the complications and messiness that come with data collection. Real data is not perfect. It also does not need to be perfect before we can make use of it.
+Many people have now heard George E. P. Box's saying that all models are wrong.
+What is perhaps less common is an exploration of how you gain value from a model
+you know to be wrong. Here I will walk through a process of systematically 
+evaluating models from simpler to more complex using an example drawn from my 
+experience. I will also show how I used a model that does not incorporate 
+every important feature of the data to make real decisions.
 
-For this I will be using cell count data from cellular expansion processes. Cell expansion processes are common to most cell and gene therapy products, as you almost always start with fewer cells than you would like to use. The biological heart of a cellular expansion process is cellular division: one cell divides into two cells.
+The data I will be using is derived from real data, but has been anonymized and 
+manipulated to isolate it from its source. I like using real(ish) data for this 
+because real data has more surprises in it than simulated data does. Part of 
+using data is deciding how to deal with all the complications and messiness that 
+come with data collection. Real data is not perfect. It also does not need to be 
+perfect before we can make use of it.
+
+For this I will be using cell count data from cellular expansion processes. Cell 
+expansion processes are common to most cell and gene therapy products, as you 
+almost always start with fewer cells than you would like to use. The biological 
+heart of a cellular expansion process is cellular division: one cell divides 
+into two cells.
 
 ## Exponential growth model
 
-This then suggests a model we might use: exponential growth. This model multiplies a doublings per unit time parameter represented by $T_D$ by an elapsed time to calculate the number of doublings. A standard exponential growth model uses a base of *e*, but for cell growth the natural base is *2*. The result from raising *2* to the number of doublings is then multiplied by your starting cell count $q_1$ to produce a final cell count $q_2$.
+This then suggests a model we might use: exponential growth. I like to build my
+statistical models on the physical, chemical, or biological processes that I am 
+trying to understand, because this allows me to incorporate all of the 
+science or engineering that led up to our understanding of that process.
+
+This model multiplies a doublings per unit time parameter represented by $T_D$ 
+by an elapsed time to calculate the number of doublings. A standard exponential 
+growth model uses a base of *e*, but for cell growth the natural base is *2*. The 
+result from raising *2* to the number of doublings is then multiplied by your 
+starting cell count $q_1$ to produce a final cell count $q_2$.
 
 $q_2 = q_1 * 2^{T_D * (t_2 - t_1)}$
 
 ## Fitting our exponential growth model
 
-If we have a couple of cell counts with associated times, we can calculate $T_D$. Let's look at an example that has been taken from a real data set, suitably anonymized.
+If we have a couple of cell counts with associated times, we can calculate $T_D$. 
+Let's look at an example that has been taken from a real data set, suitably anonymized.
 
 ```{r exponential-growth-data}
-# Make a data frame containing two cell counts at two elapsed times
+# Make a tibble containing two cell counts at two elapsed times
 df_exponential_growth <- as_tibble(data.frame(
   cell_number = c(15000 , 98000),
   elapsed_time = c(12 , 192)
 ))
 
-# Show the data frame
+# Show the tibble
 df_exponential_growth
 ```
 
@@ -62,7 +88,8 @@ df_exponential_growth |>
       )
 ```
 
-We can interpolate intermediate cell counts between the two measurements using our exponential growth model. First we need to calculate $T_D$ from our two data points:
+We can interpolate intermediate cell counts between the two measurements using 
+our exponential growth model. First we need to calculate $T_D$ from our two data points:
 
 $q_2 = q_1 * 2^{T_D * (t_2 - t_1)}$
 
@@ -74,7 +101,10 @@ $\frac{log_2(q_2/q_1)}{t_2 - t_1} = T_D$
 
 $\frac{log_2(98000/15000)}{192-12} = 0.015$
 
-Since our time was in hours, $T_D$ is then in units of doublings per hour. Using the formula, I can then calculate a predicted cell count. I have done so for several intermediate times and placed that information in a file. Let's open up that file and plot the results.
+Since our time was in hours, $T_D$ is then in units of doublings per hour. Using 
+the formula, I can then calculate a predicted cell count. I have done so for 
+several intermediate times and placed that information in a file. Let's open up 
+that file and plot the results.
 
 ```{r interpolate-exp-growth}
 # Read in interpolated data points from a comma-delimited file
@@ -84,7 +114,9 @@ Interpolated_exponential <- read_csv("Interpolated_exponential.csv", show_col_ty
 Interpolated_exponential
 ```
 
-This file also has a categorical column called 'Type' that I am using to show whether a given value is data from a measurement or a calculation from a model. With that category, we can color code the resulting plot.
+This file also has a categorical column called 'Type' that I am using to show 
+whether a given value is data from a measurement or a calculation from a model. 
+With that category, we can color code the resulting plot.
 
 ```{r interp-exp-plot}
 # Plot data points with ggplot, color coding by whether the point is measured or calculated
@@ -98,9 +130,14 @@ Interpolated_exponential |>
   )
 ```
 
-You might observe that I also extrapolated one point, the cell count at *t* = 0. The reason for that will become clear shortly.
+You might observe that I also extrapolated one point, the cell count at *t* = 0. 
+The reason for that will become clear shortly.
 
-One of the nice properties of an exponential growth model is that it has a constant doublings per unit time. If our cellular expansion process truly is exhibiting exponential growth, we should get the same $T_D$ from any two points. I have cell count data at all the same time points as I used for interpolation, so we can see how well the model performed.
+One of the nice properties of an exponential growth model is that it has a 
+constant doublings per unit time. If our cellular expansion process truly is 
+exhibiting exponential growth, we should get the same $T_D$ from any two points. 
+I have cell count data at all the same time points as I used for interpolation, 
+so we can see how well the model performed.
 
 ```{r exp-model-comparison}
 # Load the full cell growth data set
@@ -122,11 +159,28 @@ ggplot(Interpolated_exponential, aes(Time, Cell_count)) +
 
 ```
 
-Now you can see one of the complications of real data that we need to address. The *t* = 0 data point is unexpectedly low. In the real data set this was derived from, this pattern was seen repeatedly. I interpreted this an error in the cell count method because I didn't think it was biologically plausible that the cell count would truly jump up like that and then flatten out. In the absence of a good measurement, I ignored the *t* = 0 data point, starting my modeling at *t* = 12, and I then extrapolated a more plausible *t* = 0 from the model.
+Now you can see one of the complications of real data that we need to address. 
+The *t* = 0 data point is unexpectedly low. In the real data set this was 
+derived from, this pattern was seen repeatedly. I interpreted this an error in 
+the cell count method because I didn't think it was biologically plausible that 
+the cell count would truly jump up like that and then flatten out. In the 
+absence of a good measurement, I ignored the *t* = 0 data point, starting my 
+modeling at *t* = 12, and I then extrapolated a more plausible *t* = 0 from the 
+model.
 
-However, it is also clear that the exponential growth model is not quite right for this data. From 12 hours to 48 hours, the cell count changes very little. After that point, something that looks very similar to exponential growth occurs. If we think biologically again for a moment, it isn't surprising that the cells are not dividing as normal. In circumstances like this, cells have often just endured some insult, such as enzymatic detachment or centrifugation. It is not uncommon to see a delay while the cells recover.
+However, it is also clear that the exponential growth model is not quite right 
+for this data. From 12 hours to 48 hours, the cell count changes very little. 
+After that point, something that looks very similar to exponential growth occurs. 
+If we think biologically again for a moment, it isn't surprising that the cells 
+are not dividing as normal. In circumstances like this, cells have often just 
+endured some insult, such as enzymatic detachment or centrifugation. It is not 
+uncommon to see a delay while the cells recover.
 
-This suggests an improvement. We could shift the beginning of our exponential model to 48 hours, and substitute the cell count at 48 hours for all preceding time points. Our doublings per hour value needs to change in order to make this happen. Let's calculate a new $T_D$ and then model new data points starting at 48 hours.
+This suggests an improvement. We could shift the beginning of our exponential 
+model to 48 hours, and substitute the cell count at 48 hours for all preceding 
+time points. Our doublings per hour value needs to change in order to make this 
+happen. Let's calculate a new $T_D$ and then model new data points starting at 
+48 hours.
 
 $\frac{log_2(98000/15759)}{192-48} = 0.018$
 
@@ -149,15 +203,27 @@ ggplot(Shifted_exp_model, aes(Time, Cell_count)) +
 
 ```
 
-That is much closer, although you can still see that the cell counts are systematically lower than the model predictions up until the last data point. The reason for this is that cell expansion processes only approximately follow exponential growth over some time domains. The problem is that the exponential growth model knows no limits. However, at some point, the cells will run out of room, run out of food, run out of oxygen, or make too much waste, and growth will slow down or stop.
+That is much closer, although you can still see that the cell counts are 
+systematically lower than the model predictions up until the last data point. 
+The reason for this is that cell expansion processes only approximately follow 
+exponential growth over some time domains. The problem is that the exponential 
+growth model knows no limits. However, at some point, the cells will run out of 
+room, run out of food, run out of oxygen, or make too much waste, and growth 
+will slow down or stop.
 
 ## Logistic growth model
 
-This kind of growth process that slows and then stops can be modeled as logistic growth. There are a lot of ways to parametrize logistic functions, here I'm going to follow along with what I used for exponential growth. *L* is the lower asymptote, or our starting cell count, *U* is the upper asymptote, $T_D$ is again our rate parameter, and *M* is the inflection point of the logistic curve in hours.
+This kind of growth process that slows and then stops can be modeled as logistic 
+growth. There are a lot of ways to parametrize logistic functions, here I'm 
+going to follow along with what I used for exponential growth. $L$ is the lower 
+asymptote, or our starting cell count, $U$ is the upper asymptote, $T_D$ is 
+again our rate parameter, and $M$ is the inflection point of the logistic curve 
+in hours.
 
 $q_2 = U + \frac{L-U}{1+2^{T_D*(t-M)}}$
 
-Here is another anonymized data set that goes out longer so we can see the shape of the whole growth curve.
+Here is another anonymized data set that goes out longer so we can see the shape 
+of the whole growth curve.
 
 ```{r logistic-growth}
 # Load a cell growth data set that shows a s-shaped curve
@@ -167,7 +233,7 @@ Logistic_cell_growth <- read_csv("Logistic_cell_growth.csv", show_col_types = FA
 Logistic_cell_growth
 
 # Plot the data 
-Logistic_cell_growth %>% 
+Logistic_cell_growth |> 
   ggplot(aes(x = Time, y = Cell_count)) +
   geom_point(size = 3) +
   labs(
@@ -177,11 +243,26 @@ Logistic_cell_growth %>%
   )
 ```
 
-Let's fit a logistic growth model to this data. Instead of solving for the parameters analytically, its easier to fit the model numerically. I will use a custom function for the growth model to match what I've defined above and then solve for the model parameters using the non-linear least squares function *nls()*.
+Let's fit a logistic growth model to this data. Instead of solving for the 
+parameters analytically, its easier to fit the model numerically. I will use a 
+custom function for the growth model to match what I've defined above and then 
+solve for the model parameters using the non-linear least squares function *nls()*.
 
-As I noted above, there are multiple different ways to parametrize a logistic function. I like this way because the parameters all have simple and easy to understand interpretations in biological terms. This is important because in order to fit the model, I need to give the numerical solver my best guesses about the parameter values so it doesn't start too far away. That job is easier when you can look at a chart and read those parameters from it.
+As I noted above, there are multiple different ways to parametrize a logistic 
+function. I like this way because the parameters all have simple and easy to 
+understand interpretations in biological terms. This is important because in 
+order to fit the model, I need to give the numerical solver my best guesses 
+about the parameter values so it doesn't start too far away. That job is easier 
+when you can look at a chart and read those parameters from it.
 
-In this case, we will need a lower asymptote or starting cell count *L*, an upper asymptote or plateau cell count *U*, the time when the model reaches 50% of its upper asymptote *M*, and a growth rate $T_D$. Three out of four can be taken easily from the plot, but the growth rate parameter may be a little harder. The rate parameter in the logistic growth model isn't the same as the one from the exponential growth model, but it will be close enough if we calculate a starting guess from that model using the *t=0* data point and something in the middle.
+In this case, we will need a lower asymptote or starting cell count *L*, an 
+upper asymptote or plateau cell count *U*, the time when the model reaches 50% 
+of its upper asymptote *M*, and a growth rate $T_D$. Three out of four can be 
+taken easily from the plot, but the growth rate parameter may be a little 
+harder. The rate parameter in the logistic growth model isn't the same as the 
+one from the exponential growth model, but it will be close enough if we 
+calculate a starting guess from that model using the *t=0* data point and 
+something in the middle.
 
 $\frac{log_2(109655/5171)}{195-0} = 0.023$
 
@@ -218,11 +299,23 @@ ggplot(Logistic_cell_growth, aes(Time, Cell_count)) +
   )
 ```
 
-That's not a bad model. However, you can see that it was considerably more complicated to fit, because we needed to use a numerical method and it also required substantially more data. It wouldn't be possible at all to fit this model with only two data points like we did for the exponential model. This matters because we don't always have more data.
+That's not a bad model. However, you can see that it was considerably more 
+complicated to fit, because we needed to use a numerical method and it also 
+required substantially more data. It wouldn't be possible at all to fit this 
+model with only two data points like we did for the exponential model. This 
+matters because we don't always have more data.
 
-For a simple experimental setup, we might only have the number of cells we put in, and the number of cells we get out. That will push us to using an exponential model, even if we think the underlying process is more like logistic growth. That might be acceptable, depending on where we are in the growth curve.
+For a simple experimental setup, we might only have the number of cells we put 
+in, and the number of cells we get out. That will push us to using an 
+exponential model, even if we think the underlying process is more like 
+logistic growth. That might be acceptable, depending on where we are in the 
+growth curve.
 
-Let's use the logistic growth curve data to see what that looks like. In the file for the logistic growth curve data, I again used a column called Type to identify specific points. This time, all the data points are measured, but we will use the points labeled Model1 through Model4 to calculate $T_D$ for four separate exponential growth models, and then plot those models against the data.
+Let's use the logistic growth curve data to see what that looks like. In the 
+file for the logistic growth curve data, I again used a column called Type to 
+identify specific points. This time, all the data points are measured, but we 
+will use the points labeled Model1 through Model4 to calculate $T_D$ for four 
+separate exponential growth models, and then plot those models against the data.
 
 $\frac{log_2(43379/5171)}{135-0} = 0.023$
 
@@ -233,6 +326,7 @@ $\frac{log_2(238981/5171)}{285-0} = 0.019$
 $\frac{log_2(246279/5171)}{360-0} = 0.015$
 
 ```{r exp-log-models}
+knitr::opts_chunk$set(warnings=FALSE, messages=FALSE)
 # Create new columns for each model
 logistic_fit_df <- logistic_fit_df |>
   mutate(
@@ -265,21 +359,39 @@ ggplot(logistic_fit_df) +
   scale_y_continuous(limits = c(0, 260000))
 ```
 
-The first two exponential models (fit to data points at 135 and 210 hours respectively) are not too far off from the cellular growth process throughout its middle or log-growth phase. The utility of this is increased because it is often the case that a cellular expansion process will not be run until it reaches the plateau phase of logistic growth, because that means the cells are experiencing conditions that make them slow down or even stop cellular division. This is undesirable, and some manipulation will occur to remove the growth constraint. This could be passaging the cells and placing them in a bigger vessel, it could be a cellular growth medium exchange, or something else entirely, but the effect will be very much like moving the cells back down the S-curve to the part that looks more like exponential growth.
+The first two exponential models (fit to data points at 135 and 210 hours 
+respectively) are not too far off from the cellular growth process throughout 
+its middle or log-growth phase. The utility of this is increased because it is 
+often the case that a cellular expansion process will not be run until it 
+reaches the plateau phase of logistic growth, because that means the cells are 
+experiencing conditions that make them slow down or even stop cellular division. 
+This is undesirable, and some manipulation will occur to remove the growth 
+constraint. This could be passaging the cells and placing them in a bigger 
+vessel, it could be a cellular growth medium exchange, or something else 
+entirely, but the effect will be very much like moving the cells back down the 
+S-curve to the part that looks more like exponential growth.
 
 ## Fitting Multiple Curves
 
-Now, I'd like to see what happens if we take this model and apply it to a bunch of different sets of cell numbers and times. Instead of looking at one curve, we are going to look at a family of curves. We can do this directly, plotting each exponential curve on the same chart, but it may be more informative in this case to re-organize the problem.
+Now, I'd like to see what happens if we take this model and apply it to a bunch 
+of different sets of cell numbers and times. Instead of looking at one curve, 
+we are going to look at a family of curves. We can do this directly, plotting 
+each exponential curve on the same chart, but it may be more informative in this 
+case to re-organize the problem.
 
 Let's return to our exponential model:
 
 $q_2 = q_1 * 2^{T_D * (t_2 - t_1)}$
 
-Earlier, I solved for $T_D$ by taking the logarithm base 2. Now, I'm going to do that again, because it will linearize the model, enabling us to visualize the different sets of data in an intuitive way.
+Earlier, I solved for $T_D$ by taking the logarithm base 2. Now, I'm going to do 
+that again, because it will linearize the model, enabling us to visualize the 
+different sets of data in an intuitive way.
 
 $log_2(q_2) = log_2(q_1) + T_D * (t_2 - t_1)$
 
-In this case, I have another anonymized data set, and this time all the durations are the same, so the time dependency drops out and we are left with a linear model where the slope represents a number of doublings.
+In this case, I have another anonymized data set, and this time all the 
+durations are the same, so the time dependency drops out and we are left with a 
+linear model where the slope represents a number of doublings.
 
 ```{r exp-lin-model}
 # Load a bunch of log 2 cell counts that all have the same duration
@@ -291,15 +403,37 @@ Troubleshooting_exp_growth
 
 ```
 
-Let's use the `brm` package to fit a Bayesian linear regression to this data. In order to do that, we need to define a model and its priors. Much like with the *nls()* function, we will be using our knowledge of the process in question to determine the needed values, but in this case, instead of providing a starting value for a Gauss-Newton algorithm, we are going to be using a probability distribution to reflect what we already know, and also to constrain the solution space to plausible answers, a form of regularization.
+Let's use the `brm` package to fit a Bayesian linear regression to this data. 
+In order to do that, we need to define a model and its priors. Much like with 
+the *nls()* function, we will be using our knowledge of the process in question 
+to determine the needed values, but in this case, instead of providing a 
+starting value for a Gauss-Newton algorithm, we are going to be using a 
+probability distribution to reflect what we already know, and also to constrain 
+the solution space to plausible answers, a form of regularization.
 
-For this, we will need an intercept prior, which is going to represent the number of cells seeded, a slope or *b* prior, which is the expected number of doublings, and a sigma parameter for the variability of the expansion process.
+For this, we will need an intercept prior, which is going to represent the 
+number of cells seeded, a slope or *b* prior, which is the expected number of 
+doublings, and a sigma parameter for the variability of the expansion process.
 
-For this anonymized data, the intercept prior is centered on $2^{20}$ or close to 1 million cells. Since this is typically something under our control in cell expansion processes, this should be straightforward to define. `brms` automatically centers this prior, which is convenient for us in that we don't need to try to estimate where this distribution would be at zero on the $log_2$ starting cells scale (the mathematical definition).
+For this anonymized data, the intercept prior is centered on $2^{20}$ or close 
+to 1 million cells. Since this is typically something under our control in cell 
+expansion processes, this should be straightforward to define. `brms` 
+automatically centers this prior, which is convenient for us in that we don't 
+need to try to estimate where this distribution would be at zero on the $log_2$ 
+starting cells scale (the mathematical definition).
 
-The slope or doublings prior should also be well-defined, as in most cases the duration and typical doubling time of the cells in question should be known before we get started. From the duration and the typical doubling time we can calculate a resultant number of doublings. We could constrain the slope to be positive, as we should have sufficient control to ensure that the cells will almost always grow, but in this case I'll use a more generic prior that is symmetrical about zero and also quite broad. In practice I think it would be valuable to constrain it a bit more.
+The slope or doublings prior should also be well-defined, as in most cases the 
+duration and typical doubling time of the cells in question should be known 
+before we get started. From the duration and the typical doubling time we can 
+calculate a resultant number of doublings. We could constrain the slope to be 
+positive, as we should have sufficient control to ensure that the cells will 
+almost always grow, but in this case I'll use a more generic prior that is 
+symmetrical about zero and also quite broad. In practice I think it would be 
+valuable to constrain it a bit more.
 
-The half-Cauchy for the sigma prior is more of a conventional choice, but it should work well enough. A half-normal also works for this model, as it is very simple model.
+The half-Cauchy for the sigma prior is more of a conventional choice, but it 
+should work well enough. A half-normal also works for this model, as it is very 
+simple model.
 
 ```{r brms-lin-model}
 Cell_lin_model = brm(
@@ -333,8 +467,23 @@ Troubleshooting_exp_growth |>
 
 ```
 
-The plot shows the linear regression along with 50%, 80%, 95%, and 99% posterior credibility or compatibility intervals. The data points have been color coded as either everything went well in expansion, or there was some kind of problem. I have obscured any details about this, but this is from real data, and it shows an intriguing pattern. All of the expansion runs where there was some kind of problem cluster below the regression line.
+The plot shows the linear regression along with 50%, 80%, 95%, and 99% posterior 
+credibility or compatibility intervals. The data points have been color coded as 
+either everything went well in expansion, or there was some kind of problem. I 
+have obscured any details about this, but this is from real data, and it shows 
+an intriguing pattern. All of the expansion runs where there was some kind of 
+problem cluster below the regression line.
 
-Slower than expected growth is associated with a problem, but it also clear that not everything that is slower than expected has a problem. Real root-cause analysis of this would require details that cannot be shared, but this modeling technique can provide valuable information as an input to a root-cause investigation.
+Slower than expected growth is associated with a problem, but it also clear that 
+not everything that is slower than expected has a problem. Real root-cause 
+analysis of this would require details that cannot be shared, but this modeling 
+technique can provide valuable information as an input to a root-cause investigation.
 
-Each modeling technique presented here builds upon the one before it, but each one is also valuable in its own right. Based upon the amount of data available and the question to be answered, I have used each one of these models in my own work.
+## Conclusion
+Thus, we can see that a model we know to be wrong, an exponential growth model 
+that only matches the data over a limited time frame, can still be an 
+appropriate model to use for diagnosing important process changes. In this case,
+slower than expected or modeled growth was a useful criterion to help understand
+a cellular expansion process. There is a lot more that can be said here, but it
+is worth emphasizing that a simple mechanistic model and a linear regression
+produced actionable results.
